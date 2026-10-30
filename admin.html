@@ -135,7 +135,7 @@ td .acts{display:flex;gap:6px;flex-wrap:wrap}
     <label class="f">Contraseña<input class="input" id="l-pass" type="password" autocomplete="current-password" minlength="8" required></label>
     <div class="msg" id="l-msg"></div>
     <button class="btn btn-primary" type="submit" style="justify-content:center;padding:12px">Entrar</button>
-    <button class="btn" type="button" id="l-signup" style="justify-content:center">Primera vez: crear mi contraseña</button>
+    <p class="small" style="margin:0">¿Olvidaste tu contraseña? Pedile a Claude que te ayude a cambiarla.</p>
   </form>
 
   <div id="app" hidden>
@@ -243,16 +243,8 @@ async function boot(){
 $("#login").addEventListener("submit", async e => {
   e.preventDefault(); $("#l-msg").className="msg"; $("#l-msg").textContent="";
   const { error } = await sb.auth.signInWithPassword({ email: $("#l-email").value.trim(), password: $("#l-pass").value });
-  if (error){ $("#l-msg").textContent = error.message.includes("Invalid") ? "Correo o contraseña incorrectos. Si es tu primera vez, usa “crear mi contraseña”." : error.message; return; }
+  if (error){ $("#l-msg").textContent = error.message.includes("Invalid") ? "Correo o contraseña incorrectos." : error.message; return; }
   boot();
-});
-$("#l-signup").addEventListener("click", async () => {
-  const email = $("#l-email").value.trim(), password = $("#l-pass").value;
-  if (!email || password.length < 8){ $("#l-msg").textContent = "Escribe tu correo y una contraseña de al menos 8 caracteres."; return; }
-  const { data, error } = await sb.auth.signUp({ email, password });
-  if (error){ $("#l-msg").textContent = error.message.includes("registered") ? "Ese correo ya tiene contraseña. Usa Entrar." : error.message; return; }
-  if (data.session) return boot();
-  $("#l-msg").className="msg ok"; $("#l-msg").textContent = "Cuenta creada. Ahora toca Entrar.";
 });
 $("#logout").addEventListener("click", async () => { await sb.auth.signOut(); boot(); });
 
