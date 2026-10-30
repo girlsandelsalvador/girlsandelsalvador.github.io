@@ -410,10 +410,10 @@ es: {
   reserve:"Reservar", waitlist:"Lista de espera", waitTag:" (lista de espera)", pickDate:"Escogé una fecha…", noDate:"Ninguna fecha me queda, avísenme de las próximas",
   banner:(t,z,d,few,free)=>`Próxima salida${free?" (gratis)":""}: <b>${t} en ${z}</b>, ${d}${few?` · solo ${few} cupos`:''}`, bannerCta:"Reservar →",
   errName:"Escribí tu nombre para saber cómo llamarte.", errPhone:"Revisá tu WhatsApp: son 8 dígitos y empieza con 6 o 7.", errPhoneIntl:"Revisá el código de país y tu número de WhatsApp.", ccAria:"Código de país", errMeetup:"Escogé a cuál salida querés ir.",
-  sending:"Reservando…", errClosed:"Esa salida ya cerró. Escogé otra fecha.", errMany:"Ya hiciste varias reservas hoy con este número. Escribinos por WhatsApp y te ayudamos.",
+  sending:"Reservando…", errClosed:"Esa salida ya cerró. Escogé otra fecha.", errMany:"Se hicieron muchas reservas seguidas desde aquí. Esperá un rato o escribinos por WhatsApp y te ayudamos.",
   errWa:"Revisá tu número de WhatsApp.", errNet:"No se pudo guardar tu reserva. Revisá tu conexión e intentá de nuevo.",
   msgPaid:(n,t,d,c,p)=>`¡Hola! Soy ${n}. Reservé ${t} (${d}). Mi código es ${c}. Te mando el comprobante de los $${p} 💸`,
-  dup:"Ya tenías esta reserva", held:h=>`Lugar apartado por ${h} horas`, ready:n=>`¡Listo, ${n}!`, yourCode:"Tu código de reserva",
+  dup:"Ya tenías esta reserva", codeHidden:"(ya reservada)", dupNote:"Ya estás anotada con este número. Si no encontrás tu código, escribinos por WhatsApp y te lo pasamos.", held:h=>`Lugar apartado por ${h} horas`, ready:n=>`¡Listo, ${n}!`, yourCode:"Tu código de reserva",
   amount:"Monto", bank:"Banco", holder:"Titular", account:"Cuenta", ref:"Concepto", copy:"Copiar",
   payInstr:null, stepRef:"Poné tu código en el concepto de la transferencia.", stepGroup:"Cuando confirmemos el pago, te agregamos al grupo de WhatsApp con la ubicación.",
   sendProof:"Mandar comprobante por WhatsApp", noWa:n=>`Si el botón no abre WhatsApp, escribinos al ${n}.`,
@@ -469,10 +469,10 @@ en: {
   reserve:"Book", waitlist:"Join waitlist", waitTag:" (waitlist)", pickDate:"Pick a date…", noDate:"None of these dates work, tell me about the next ones",
   banner:(t,z,d,few,free)=>`Next meetup${free?" (free)":""}: <b>${t} in ${z}</b>, ${d}${few?` · only ${few} spots left`:''}`, bannerCta:"Book →",
   errName:"Add your name so we know what to call you.", errPhone:"Check your WhatsApp: Salvadoran numbers are 8 digits and start with 6 or 7.", errPhoneIntl:"Check the country code and your WhatsApp number.", ccAria:"Country code", errMeetup:"Pick which meetup you want to join.",
-  sending:"Booking…", errClosed:"That meetup is closed. Pick another date.", errMany:"You've already made several bookings today with this number. Message us on WhatsApp and we'll help.",
+  sending:"Booking…", errClosed:"That meetup is closed. Pick another date.", errMany:"Too many bookings in a row from here. Wait a bit or message us on WhatsApp and we'll help.",
   errWa:"Check your WhatsApp number.", errNet:"Your booking couldn't be saved. Check your connection and try again.",
   msgPaid:(n,t,d,c,p)=>`Hi! I'm ${n}. I booked ${t} (${d}). My code is ${c}. Here's my receipt for the $${p} 💸`,
-  dup:"You already had this booking", held:h=>`Spot held for ${h} hours`, ready:n=>`You're in, ${n}!`, yourCode:"Your booking code",
+  dup:"You already had this booking", codeHidden:"(already booked)", dupNote:"You're already signed up with this number. If you can't find your code, message us on WhatsApp and we'll send it.", held:h=>`Spot held for ${h} hours`, ready:n=>`You're in, ${n}!`, yourCode:"Your booking code",
   amount:"Amount", bank:"Bank", holder:"Account holder", account:"Account", ref:"Reference", copy:"Copy",
   payInstr:"Send $5 by Transfer365 or bank transfer and send us the receipt on WhatsApp with your code.", stepRef:"Put your code in the transfer reference.", stepGroup:"Once we confirm the payment, we'll add you to the WhatsApp group with the location.",
   sendProof:"Send receipt on WhatsApp", noWa:n=>`If the button doesn't open WhatsApp, message us at ${n}.`,
@@ -647,42 +647,43 @@ $("#form").addEventListener("submit", async e => {
 });
 
 function renderDone(d, name){
+  const code = d.code || t("codeHidden");
   const first = name.split(" ")[0];
   const m = d.meetup;
   let html;
   if (m && Number(m.price) === 0 && d.status !== "waitlist"){
-    const msg = t("msgFree")(name, m.title, dayLong(m.starts_at), d.code);
+    const msg = t("msgFree")(name, m.title, dayLong(m.starts_at), code);
     html = `<span class="ok-badge">${esc(d.duplicate ? t("dup") : t("freeBadge"))}</span>
       <h2 style="font-size:28px;margin-top:14px">${esc(t("ready")(first))}</h2>
       <p class="sub" style="margin-bottom:0">${esc(m.title)} · ${esc(longDate(m.starts_at))} · ${esc(m.zone)}, ${esc(m.city)}</p>
-      <div class="code">${esc(d.code)}</div><p class="fine" style="text-align:left;margin:0 0 14px">${t("yourCode")}</p>
+      ${d.code ? `<div class="code">${esc(code)}</div><p class="fine" style="text-align:left;margin:0 0 14px">${t("yourCode")}</p>` : `<p class="sub">${esc(t("dupNote"))}</p>`}
       <p class="sub">${esc(t("freeReady"))}</p>
       <a class="btn btn-wa" href="${esc(waLink(msg))}" target="_blank" rel="noopener">${t("writeUs")}</a>`;
   } else if (d.status === "pending" || d.status === "paid"){
     const price = Number(m.price);
-    const msg = t("msgPaid")(name, m.title, dayLong(m.starts_at), d.code, price.toFixed(0));
+    const msg = t("msgPaid")(name, m.title, dayLong(m.starts_at), code, price.toFixed(0));
     const acct = ACCT[LANG][d.pay.type] || d.pay.type;
     html = `<span class="ok-badge">${esc(d.duplicate ? t("dup") : t("held")(d.pay.hold_hours))}</span>
       <h2 style="font-size:28px;margin-top:14px">${esc(t("ready")(first))}</h2>
       <p class="sub" style="margin-bottom:0">${esc(m.title)} · ${esc(longDate(m.starts_at))} · ${esc(m.zone)}, ${esc(m.city)}</p>
-      <div class="code">${esc(d.code)}</div><p class="fine" style="text-align:left;margin:0">${t("yourCode")}</p>
+      ${d.code ? `<div class="code">${esc(code)}</div><p class="fine" style="text-align:left;margin:0">${t("yourCode")}</p>` : `<p class="sub">${esc(t("dupNote"))}</p>`}
       <dl class="kv">
         <div><dt>${t("amount")}</dt><dd>$${price.toFixed(2)}</dd></div>
         <div><dt>${t("bank")}</dt><dd>${esc(d.pay.bank)}</dd></div>
         <div><dt>${t("holder")}</dt><dd>${esc(d.pay.holder)}</dd></div>
         <div><dt>${t("account")} (${esc(acct)})</dt><dd>${esc(d.pay.number)} <button type="button" class="copy" data-copy="${esc(d.pay.number)}">${t("copy")}</button></dd></div>
-        <div><dt>${t("ref")}</dt><dd>${esc(d.code)} <button type="button" class="copy" data-copy="${esc(d.code)}">${t("copy")}</button></dd></div>
+        ${d.code ? `<div><dt>${t("ref")}</dt><dd>${esc(code)} <button type="button" class="copy" data-copy="${esc(code)}">${t("copy")}</button></dd></div>` : ""}
       </dl>
       <ol class="steps-mini"><li>${esc(t("payInstr") || d.pay.instructions)}</li><li>${t("stepRef")}</li><li>${t("stepGroup")}</li><li>${t("refundNote")}</li></ol>
       <a class="btn btn-wa" href="${esc(waLink(msg))}" target="_blank" rel="noopener">${t("sendProof")}</a>
       <p class="fine">${esc(t("noWa")(prettyWa()))}</p>`;
   } else {
     const what = m ? `${m.title} (${dayLong(m.starts_at)})` : t("nextDates");
-    const msg = t("msgWait")(name, what, d.code);
+    const msg = t("msgWait")(name, what, code);
     html = `<span class="ok-badge wait">${t("waitBadge")}</span>
       <h2 style="font-size:28px;margin-top:14px">${esc(t("waitReady")(first))}</h2>
       <p class="sub">${esc(m ? t("waitFull")(m.title) : t("waitNone"))} <b>${t("dontPay")}</b></p>
-      <div class="code">${esc(d.code)}</div><p class="fine" style="text-align:left;margin:0 0 18px">${t("yourCodeShort")}</p>
+      ${d.code ? `<div class="code">${esc(code)}</div><p class="fine" style="text-align:left;margin:0 0 18px">${t("yourCodeShort")}</p>` : `<p class="sub">${esc(t("dupNote"))}</p>`}
       <a class="btn btn-wa" href="${esc(waLink(msg))}" target="_blank" rel="noopener">${t("writeUs")}</a>`;
   }
   html += `<button type="button" class="link-btn" id="again">${t("again")}</button>`;
